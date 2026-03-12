@@ -1,0 +1,46 @@
+@startuml CallSequenceDiagram
+skinparam maxMessageSize 150
+autonumber
+actor "Appelant (A)" as Caller
+participant "Serveur HTTP\n(CallController)" as API
+participant "Signalisation\n(STOMP WebSocket)" as Signaling
+participant "Relais Audio\n(Raw WebSocket)" as VoiceRelay
+actor "Destinataire (B)" as Callee
+
+== Prérequis ==
+Caller -> Signaling : Connecté & Abonné à /user/queue/calls
+Callee -> Signaling : Connecté & Abonné à /user/queue/calls
+
+== 1. Initiation de l'appel ==
+Caller -> API : POST /api/v1/calls\n{ calleeId: "B", callType: "AUDIO" }
+API -->> Caller : 201 Created (callId: "call_123")
+API -> Signaling : Émet INCOMING_CALL (callId, caller=A)
+Signaling -> Callee : Push (JSON : INCOMING_CALL)
+note over Callee: Écran "Appel Entrant" \nSonnerie...
+
+== 2. Acceptation de l'appel ==
+Callee -> API : PATCH /api/v1/calls/call_123/accept
+API -->> Callee : 204 No Content
+API -> Signaling : Émet CALL_ACCEPTED
+Signaling -> Caller : Push (JSON : CALL_ACCEPTED)
+
+== 3. Établissement du canal Voix (Mode Relais) ==
+Caller -> VoiceRelay : Connecte WS \nws://host:port/api/v1/calls/call_123/stream/{userId_A}
+Callee -> VoiceRelay : Connecte WS \nws://host:port/api/v1/calls/call_123/stream/{userId_B}
+
+loop Pendant l'appel (Ex: Toutes les 20 à 50ms)
+    Caller -> VoiceRelay : Envoi chunk audio (byte[])
+    VoiceRelay -> Callee : Achemine chunk audio (byte[])
+    Callee -> VoiceRelay : Envoi chunk audio (byte[])
+    VoiceRelay -> Caller : Achemine chunk audio (byte[])
+end
+
+== 4. Fin de l'appel ==
+Caller -> API : PATCH /api/v1/calls/call_123/end
+API -> Signaling : Émet CALL_ENDED
+Signaling -> Callee : Push (JSON : CALL_ENDED)
+Callee -> VoiceRelay : Fermeture du WS audio
+Caller -> VoiceRelay : Fermeture du WS audio
+note over Caller, Callee: L'appel est terminé.
+
+@enduml

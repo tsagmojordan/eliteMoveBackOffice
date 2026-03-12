@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Bienvenue sur Smart Lighting Back-Office</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .header {
+            background-color: #0b2e59;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+        }
+        .content {
+            padding: 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #0b2e59;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .highlight {
+            font-weight: 600;
+            color: #0288d1;
+        }
+        .footer {
+            background-color: #eff3f8;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #777777;
+        }
+        .button {
+            display: inline-block;
+            background-color: #0288d1;
+            color: #ffffff !important;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SIMEP - Smart Lighting</h1>
+        </div>
+        <div class="content">
+            <h2>Bonjour,</h2>
+            <p>Nous avons le plaisir de vous informer que votre compte d'accès au portail de télégestion Smart Lighting a été créé avec succès.</p>
+            <p>Voici vos identifiants pour vous connecter :</p>
+            <ul>
+                <li><strong>Nom d'utilisateur :</strong> <span class="highlight" th:text="${username}">[Nom Utilisateur]</span></li>
+            </ul>
+            <p>Veuillez cliquer sur le lien ci-dessous pour modifier votre mot de passe temporaire et vous connecter pour la première fois à la plateforme :</p>
+            
+            <div style="text-align: center;">
+                <!-- En prod, l'URL viendrait des propertys SpringBoot -->
+                <a href="https://app.smartlighting.cm/login" class="button">Accéder à mon tableau de bord</a>
+            </div>
+            
+            <p style="margin-top: 30px;">Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Projet SIMEP. Ce message est envoyé automatiquement, merci de ne pas y répondre.
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Suppression de votre compte</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            background-color: #0b2e59;
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .content {
+            padding: 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        .footer {
+            background-color: #eff3f8;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #777777;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color: #ffffff;">SIMEP - Smart Lighting</h2>
+        </div>
+        <div class="content">
+            <h3>Bonjour <span th:text="${username}">[Utilisateur]</span>,</h3>
+            <p>Nous vous informons de la suppression de votre compte sur notre système par un administrateur.</p>
+            <p>Toutes vos données d'accès liées à SmartLighting ont été retirées du système.</p>
+            <p>Si vous pensez qu'il s'agit d'une erreur, veuillez contacter rapidement l'administrateur de
+                l'application.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Projet SIMEP. Ce message est envoyé automatiquement, merci de ne pas y répondre.
+        </div>
+    </div>
+</body>
+
+</html>

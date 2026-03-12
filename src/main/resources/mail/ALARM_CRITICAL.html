@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Alerte Critique</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background: #ffffff;
+            border-radius: 8px;
+            border-top: 5px solid #d32f2f;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .content {
+            padding: 30px;
+            line-height: 1.6;
+        }
+
+        .alert-box {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #d32f2f;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="content">
+            <h2 style="color: #d32f2f;">ALERTE SYSTÈME CRITIQUE</h2>
+            <p>Le système a détecté un incident qui nécessite une attention immédiate.</p>
+
+            <div class="alert-box">
+                Code : <span th:text="${code}">[CODE]</span><br />
+                Détail : <span th:text="${desc}">[DESCRIPTION]</span>
+            </div>
+
+            <p>Veuillez vous connecter rapidement au centre de supervision pour établir un diagnostic et acquitter
+                l'alarme.</p>
+            <a href="https://app.smartlighting.cm/alarms"
+                style="display:inline-block;background:#d32f2f;color:#fff;padding:10px 20px;text-decoration:none;border-radius:4px;">Voir
+                l'Alarme</a>
+        </div>
+    </div>
+</body>
+
+</html>

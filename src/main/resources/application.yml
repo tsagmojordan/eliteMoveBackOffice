@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: ride_app
+
+  # ===== Datasource (H2 pour dev — remplacer par PostgreSQL en prod) =====
+  datasource:
+    url: jdbc:h2:mem:ride_app_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+
+  # ===== Spring Modulith =====
+  modulith:
+    events:
+      republish-outstanding-events-on-restart: true
+
+  # ===== Mail =====
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME:adresse@gmail.com}
+    password: ${GMAIL_PASSWORD:motdepasse_app}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  thymeleaf:
+    prefix: classpath:/mail/
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+    cache: false
+
+# ===== JWT + Twilio =====
+application:
+  security:
+    jwt:
+      secret-key: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000
+  twilio:
+    account-sid: ${TWILIO_ACCOUNT_SID:test_sid}
+    auth-token: ${TWILIO_AUTH_TOKEN:test_token}
+    phone-number: ${TWILIO_PHONE_NUMBER:+123456789}
+    whatsapp-number: ${TWILIO_WHATSAPP_NUMBER:+123456789}
+
+# ===== Actuator =====
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, modulith
+
+# ===== Logging =====
+logging:
+  level:
+    cm.smartlighting: DEBUG
+    org.springframework.security: INFO
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
