@@ -1,6 +1,8 @@
 package com.karibu.ride_app_backend.authentication.config;
 
 import com.karibu.ride_app_backend.authentication.helpers.JwtAuthenticationFilter;
+import com.karibu.ride_app_backend.authentication.helpers.JwtHelper;
+import com.karibu.ride_app_backend.authentication.repository.TokenRepository;
 import com.karibu.ride_app_backend.authentication.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,8 +48,9 @@ public class SecurityConfig {
             "/swagger-ui.html"
     };
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtHelper jwtHelper;
     private final CustomUserDetailsService userDetailsService;
+    private final TokenRepository tokenRepository;
 
     /**
      * Chaîne de filtres de sécurité principale.
@@ -58,6 +61,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         log.debug("[SecurityConfig] Configuration de la chaîne de filtres de sécurité");
+
+        JwtAuthenticationFilter jwtAuthenticationFilter = new JwtAuthenticationFilter(jwtHelper, userDetailsService,
+                tokenRepository);
 
         http
                 .csrf(AbstractHttpConfigurer::disable)

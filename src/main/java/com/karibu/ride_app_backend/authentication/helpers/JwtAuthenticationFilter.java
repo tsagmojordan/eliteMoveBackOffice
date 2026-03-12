@@ -1,6 +1,5 @@
 package com.karibu.ride_app_backend.authentication.helpers;
 
-
 import com.karibu.ride_app_backend.authentication.repository.TokenRepository;
 import com.karibu.ride_app_backend.authentication.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -14,7 +13,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
+
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -28,7 +27,6 @@ import java.io.IOException;
  * puis alimente le contexte de sécurité Spring.
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
