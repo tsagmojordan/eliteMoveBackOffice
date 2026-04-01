@@ -1,1 +1,90 @@
 
+[
+  // ─── JJWT : désérialisation Jackson des claims JWT ───────────────────────
+  {
+    "name": "io.jsonwebtoken.impl.DefaultClaims",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+  {
+    "name": "io.jsonwebtoken.impl.DefaultJwt",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "io.jsonwebtoken.impl.DefaultJws",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+
+  // ─── Twilio SDK : HTTP client interne + sérialisation JSON ──────────────
+  {
+    "name": "com.twilio.http.TwilioRestClient",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.twilio.http.HttpClient",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.twilio.http.NetworkHttpClient",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+  {
+    "name": "com.twilio.exception.ApiException",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true,
+    "allDeclaredFields": true
+  },
+
+  // ─── PostgreSQL : driver JDBC chargé dynamiquement ──────────────────────
+  {
+    "name": "org.postgresql.Driver",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+
+  // ─── Hibernate : proxies dynamiques pour les entités JPA ────────────────
+  // Note : Spring Data JPA + Hibernate générent des proxies au runtime.
+  // GraalVM nécessite que ces classes soient déclarées.
+  // Ajoutez ici VOS entités (@Entity) :
+  //
+  // {
+  //   "name": "com.karibu.model.User",
+  //   "allDeclaredConstructors": true,
+  //   "allPublicMethods": true,
+  //   "allDeclaredFields": true
+  // },
+  //
+  // TIP : Utilisez @RegisterReflectionForBinding sur vos classes @Entity
+  // dans une classe de configuration Spring Native pour éviter de tout
+  // lister ici manuellement.
+
+  // ─── WebSocket / STOMP ───────────────────────────────────────────────────
+  {
+    "name": "org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurationSupport",
+    "allDeclaredMethods": true,
+    "allDeclaredConstructors": true
+  },
+
+  // ─── Thymeleaf : résolution de templates ────────────────────────────────
+  {
+    "name": "org.thymeleaf.spring6.SpringTemplateEngine",
+    "allDeclaredConstructors": true,
+    "allPublicMethods": true
+  },
+
+  // ─── SpringDoc / Swagger : scan des annotations au runtime ──────────────
+  {
+    "name": "io.swagger.v3.oas.annotations.Operation",
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "io.swagger.v3.oas.annotations.Parameter",
+    "allDeclaredMethods": true
+  }
+]
