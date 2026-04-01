@@ -1,19 +1,16 @@
 spring:
   application:
     name: ride_app
-
   # ===== Datasource (H2 pour dev — remplacer par PostgreSQL en prod) =====
   datasource:
     url: jdbc:h2:mem:ride_app_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
-
   h2:
     console:
       enabled: true
       path: /h2-console
-
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -22,12 +19,10 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
-
   # ===== Spring Modulith =====
   modulith:
     events:
       republish-outstanding-events-on-restart: true
-
   # ===== Mail =====
   mail:
     host: smtp.gmail.com
@@ -40,13 +35,15 @@ spring:
           auth: true
           starttls:
             enable: true
-
   thymeleaf:
     prefix: classpath:/mail/
     suffix: .html
     mode: HTML
     encoding: UTF-8
     cache: false
+
+server:
+  port: 8080
 
 # ===== JWT + Twilio =====
 application:
