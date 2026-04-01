@@ -1,6 +1,6 @@
 
 [
-  # ─── JJWT : désérialisation Jackson des claims JWT ───────────────────────
+  // ─── JJWT : désérialisation Jackson des claims JWT ───────────────────────
   {
     "name": "io.jsonwebtoken.impl.DefaultClaims",
     "allDeclaredConstructors": true,
