@@ -13,12 +13,6 @@
     <version>0.0.1-SNAPSHOT</version>
     <name>RIDE_APP_BACKEND</name>
     <description>RIDE_APP_BACKEND</description>
-    <url/>
-    <licenses><license/></licenses>
-    <developers><developer/></developers>
-    <scm>
-        <connection/><developerConnection/><tag/><url/>
-    </scm>
 
     <properties>
         <java.version>21</java.version>
@@ -158,6 +152,14 @@
             <version>2.8.4</version>
         </dependency>
 
+        <!-- ===== GraalVM Native hints (AOT metadata) ===== -->
+        <!--
+            spring-boot-starter-parent hérite déjà de native-maven-plugin via le profil "native".
+            On ajoute native-image-configure uniquement si on veut du tracing agent en local.
+            Rien à ajouter ici : les hints sont dans src/main/resources/META-INF/native-image/
+            et dans la classe NativeHintsConfig.java (voir ci-dessous dans les commentaires).
+        -->
+
     </dependencies>
 
     <!-- ===== Spring Modulith BOM ===== -->
@@ -175,8 +177,8 @@
 
     <build>
         <plugins>
-            <!-- ✅ Plugin GraalVM SUPPRIMÉ -->
 
+            <!-- ===== Compiler : Lombok + MapStruct (ordre critique) ===== -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -184,10 +186,16 @@
                 <configuration>
                     <release>${java.version}</release>
                     <annotationProcessorPaths>
+                        <!-- Lombok DOIT être déclaré AVANT MapStruct -->
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
                             <version>1.18.36</version>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct-binding.version}</version>
                         </path>
                         <path>
                             <groupId>org.mapstruct</groupId>
@@ -197,10 +205,13 @@
                     </annotationProcessorPaths>
                     <compilerArgs>
                         <arg>-Amapstruct.defaultComponentModel=spring</arg>
+                        <!-- Requis pour Spring AOT : permet l'accès aux paramètres de méthode -->
+                        <arg>-parameters</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>
 
+            <!-- ===== Spring Boot Maven Plugin (AOT activé) ===== -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -211,10 +222,120 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <!-- Active le processing AOT pour la compilation native -->
+                    <image>
+                        <name>ride-app-backend:${project.version}</name>
+                    </image>
                 </configuration>
+                <executions>
+                    <!-- process-aot est automatiquement lié par le profil native,
+                         mais on le rend explicite pour clarté -->
+                    <execution>
+                        <id>process-aot</id>
+                        <goals>
+                            <goal>process-aot</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>
     </build>
+
+    <!-- ===================================================================
+         PROFIL NATIVE — activé par : mvn -Pnative native:compile
+         ou automatiquement par le Dockerfile via -Pnative
+    ==================================================================== -->
+    <profiles>
+        <profile>
+            <id>native</id>
+            <build>
+                <plugins>
+
+                    <!-- Plugin GraalVM Native Maven Plugin -->
+                    <plugin>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <!-- La version est gérée par spring-boot-starter-parent 3.4.2 -->
+                        <extensions>true</extensions>
+                        <executions>
+                            <execution>
+                                <id>build-native</id>
+                                <goals>
+                                    <goal>compile-no-fork</goal>
+                                </goals>
+                                <phase>package</phase>
+                            </execution>
+                            <!-- Tests natifs (optionnel, désactivé en CI pour accélérer) -->
+                            <execution>
+                                <id>test-native</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <!-- Nom du binaire produit dans target/ -->
+                            <imageName>ride-app-backend</imageName>
+
+                            <!-- Options de compilation native -->
+                            <buildArgs>
+                                <!-- Réduit la taille mémoire au démarrage -->
+                                <buildArg>-O2</buildArg>
+
+                                <!-- Nécessaire pour Hibernate : proxy dynamique -->
+                                <buildArg>--enable-url-protocols=http,https</buildArg>
+
+                                <!-- Jackson : désérialisation dynamique -->
+                                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+
+                                <!--
+                                    Twilio SDK utilise beaucoup de réflexion HTTP.
+                                    On autorise toutes les classes Twilio via le fichier
+                                    reflect-config.json dans META-INF/native-image/
+                                -->
+                                <buildArg>--allow-incomplete-classpath</buildArg>
+
+                                <!--
+                                    WebSocket/STOMP : initialisation au runtime
+                                    (évite ClassInitializationError au build)
+                                -->
+                                <buildArg>
+                                    --initialize-at-run-time=org.springframework.web.socket.sockjs.client,org.springframework.messaging.simp.stomp
+                                </buildArg>
+
+                                <!-- Thymeleaf : templates chargés depuis le classpath -->
+                                <buildArg>
+                                    --initialize-at-run-time=org.thymeleaf.templateresolver.ClassLoaderTemplateResolver
+                                </buildArg>
+
+                                <!--
+                                    Répertoire des hints JSON manuels
+                                    (reflect-config.json, resource-config.json, proxy-config.json)
+                                -->
+                                <buildArg>
+                                    -H:ConfigurationFileDirectories=${project.basedir}/src/main/resources/META-INF/native-image
+                                </buildArg>
+
+                                <!-- Pour diagnostics si le build natif échoue -->
+                                <buildArg>-H:+PrintClassInitialization</buildArg>
+                            </buildArgs>
+                        </configuration>
+                    </plugin>
+
+                    <!-- Surefire : skip les tests JVM en mode natif (ils tournent via native:test) -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>true</skipTests>
+                        </configuration>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
