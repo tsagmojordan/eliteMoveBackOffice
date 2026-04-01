@@ -72,7 +72,7 @@ management:
 # ===== Logging =====
 logging:
   level:
-    cm.smartlighting: DEBUG
+    com.karibu.ride_app_backend: DEBUG
     org.springframework.security: INFO
     org.hibernate.SQL: WARN
   pattern:

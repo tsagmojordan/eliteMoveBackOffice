@@ -22,6 +22,7 @@ public class Vehicule {
     private String licensePlate;
     private VehiculeClass vehiculeClass;
     private VehiculeStatus status;
+    private int price;
 
     public void markAsAvailable() {
         this.status = VehiculeStatus.AVAILABLE;

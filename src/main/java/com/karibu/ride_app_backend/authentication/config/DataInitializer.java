@@ -49,6 +49,10 @@ public class DataInitializer implements CommandLineRunner {
         final Role adminRole = createAdminRole(adminPermissions);
         createAdminUser(adminRole);
 
+        //final Set<Permission> userPermissions = createPermissions();
+        final Role userRole = createUserRole(adminPermissions);
+        createUser(userRole);
+
         log.debug("[DataInitializer] Initialisation terminée avec succès");
     }
 
@@ -91,6 +95,21 @@ public class DataInitializer implements CommandLineRunner {
         return saved;
     }
 
+    private Role createUserRole(final Set<Permission> permissions) {
+        log.debug("[DataInitializer] Création du rôle USER");
+
+        final Role userRole = Role.builder()
+                .name("USER")
+                .description("Client de l'application elite move")
+                .permissions(permissions)
+                .build();
+
+        final Role saved = roleRepository.save(userRole);
+        log.debug("[DataInitializer] Rôle USER créé avec {} permission(s)", permissions.size());
+        return saved;
+    }
+
+
     private void createAdminUser(final Role adminRole) {
         log.debug("[DataInitializer] Création de l'utilisateur admin par défaut");
 
@@ -109,6 +128,26 @@ public class DataInitializer implements CommandLineRunner {
 
         userRepository.save(admin);
         log.debug("[DataInitializer] Utilisateur admin créé : admin@smartlighting.cm / Admin@1234");
+    }
+
+    private void createUser(final Role userRole) {
+        log.debug("[DataInitializer] Création de l'utilisateur admin par défaut");
+
+        final User user = User.builder()
+                .firstname("user")
+                .lastname("user")
+                .username("user")
+                .email("user@smartlighting.cm")
+                .password(passwordEncoder.encode("User@1234"))
+                .enabled(true)
+                .accountNonExpired(true)
+                .accountNonLocked(true)
+                .credentialsNonExpired(true)
+                .roles(Set.of(userRole))
+                .build();
+
+        userRepository.save(user);
+        log.debug("[DataInitializer] Utilisateur admin créé : user@smartlighting.cm / User@1234");
     }
 
     private Permission buildPermission(

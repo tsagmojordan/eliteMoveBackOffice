@@ -17,4 +17,6 @@ public class CreateVehiculeRequest {
     private String licensePlate;
     @NotNull
     private VehiculeClass vehiculeClass;
+    @NotNull
+    private int price;
 }

@@ -17,4 +17,7 @@ public class VehiculeDto {
     private String licensePlate;
     private VehiculeClass vehiculeClass;
     private VehiculeStatus status;
+    private String longitude;
+    private String latitude;
+    private int price;
 }

@@ -1,7 +1,7 @@
 package com.karibu.ride_app_backend.authentication.helpers;
 
 import com.karibu.ride_app_backend.authentication.repository.TokenRepository;
-import com.karibu.ride_app_backend.authentication.service.CustomUserDetailsService;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,7 +34,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
     private final JwtHelper jwtHelper;
-    private final CustomUserDetailsService userDetailsService;
+    private final UserDetailsService userDetailsService;
     private final TokenRepository tokenRepository;
 
     @Override

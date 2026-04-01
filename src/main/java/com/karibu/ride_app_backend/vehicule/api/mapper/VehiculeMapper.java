@@ -13,6 +13,7 @@ public class VehiculeMapper {
                 .year(request.getYear())
                 .licensePlate(request.getLicensePlate())
                 .vehiculeClass(request.getVehiculeClass())
+                .price(request.getPrice())
                 .build();
     }
 
@@ -25,6 +26,7 @@ public class VehiculeMapper {
                 .licensePlate(vehicule.getLicensePlate())
                 .vehiculeClass(vehicule.getVehiculeClass())
                 .status(vehicule.getStatus())
+                .price(vehicule.getPrice())
                 .build();
     }
 }
