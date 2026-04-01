@@ -1,25 +1,25 @@
-# ── Étape 1 : Build natif avec GraalVM ──────────────────────────────────────
-FROM ghcr.io/graalvm/native-image-community:21 AS builder
+# ── Étape 1 : Build Maven classique ─────────────────────────────────────────
+FROM maven:3.9.6-eclipse-temurin-21 AS builder
 
 WORKDIR /app
-
-# Installer Maven
-RUN microdnf install -y maven findutils
-
-# Copier et builder
 COPY pom.xml .
 COPY src ./src
-RUN mvn clean package -Pnative -DskipTests
+
+RUN mvn clean package -DskipTests
 
 # ── Étape 2 : Image finale légère ────────────────────────────────────────────
-FROM debian:bookworm-slim
+FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copier le binaire natif
-COPY --from=builder /app/target/mon-app .
+COPY --from=builder /app/target/*.jar app.jar
 
-# Back4app utilise $PORT dynamiquement
 EXPOSE 8080
 
-CMD ["./mon-app"]
+# Optimisé pour conteneur avec peu de RAM (256MB Back4app)
+ENTRYPOINT ["java", \
+  "-Xms64m", \
+  "-Xmx200m", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-jar", "app.jar"]
