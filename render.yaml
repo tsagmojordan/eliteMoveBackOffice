@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: mon-backend-java
+    runtime: docker          # On utilise Docker pour GraalVM
+    plan: free               # Plan gratuit
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: SPRING_PROFILES_ACTIVE   # si Spring Boot
+        value: prod
+    healthCheckPath: /actuator/health  # endpoint de santé
+    autoDeploy: true         # Redéploiement auto sur push GitHub
