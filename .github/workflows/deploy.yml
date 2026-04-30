@@ -19,6 +19,13 @@ jobs:
           distribution: 'graalvm-community'
           native-image-job-reports: 'true'
 
+      - name: Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-maven-
+
       - name: Build native image
         run: ./mvnw -Pnative native:compile -DskipTests
 
@@ -34,8 +41,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}/ride-app:latest
+          tags: ghcr.io/${{ github.repository }}:latest
 
       - name: Trigger Render deploy
-        run: |
-          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
