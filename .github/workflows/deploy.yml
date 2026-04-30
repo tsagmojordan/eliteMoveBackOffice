@@ -1,236 +1,41 @@
-# =============================================================================
-#  .github/workflows/deploy.yml
-#
-#  Pipeline CI/CD :
-#    1. Tests JVM (rapides, H2 en mémoire)
-#    2. Build natif GraalVM 21 (dans le Dockerfile multi-stage)
-#    3. Push image sur GitHub Container Registry (GHCR)
-#    4. Redéploiement automatique sur Back4app Containers
-#
-#  Runner    : ubuntu-latest (16 GB RAM — nécessaire pour GraalVM native)
-#  Repo      : public → GITHUB_TOKEN suffisant pour GHCR (gratuit)
-#  Cache     : GitHub Actions Cache (type=gha) pour les layers Docker
-#              + cache Maven ~/.m2 pour les tests JVM
-#
-#  Secrets à configurer dans Settings → Secrets and variables → Actions :
-#    BACK4APP_APP_ID          — Application ID Back4app Containers
-#    BACK4APP_REST_API_KEY    — REST API Key Back4app Containers
-# =============================================================================
-
-name: 🚀 Build Native & Deploy to Back4app
+name: Build Native & Deploy
 
 on:
   push:
     branches: [main]
-  # Permet de lancer manuellement depuis l'onglet Actions (utile pour debug)
-  workflow_dispatch:
-
-env:
-  REGISTRY: ghcr.io
-  # github.repository = "tonuser/mon-repo" → image = ghcr.io/tonuser/mon-repo
-  IMAGE_NAME: ${{ github.repository }}
-  # Nom du binaire natif (doit correspondre à <imageName> dans pom.xml)
-  BINARY_NAME: ride-app-backend
 
 jobs:
-
-  # ───────────────────────────────────────────────────────────────────────────
-  # JOB 1 — Tests unitaires (JVM classique, rapide ~2-3 min)
-  #
-  # On sépare les tests du build natif pour avoir un feedback rapide.
-  # Les tests utilisent H2 (pas besoin de PostgreSQL réel).
-  # ───────────────────────────────────────────────────────────────────────────
-  test:
-    name: 🧪 Tests JVM (H2)
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: ☕ Setup JDK 21 (Temurin)
-        uses: actions/setup-java@v4
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
         with:
           java-version: '21'
-          distribution: 'temurin'
-          # Cache Maven : évite de re-télécharger toutes les dépendances
-          cache: 'maven'
+          distribution: 'graalvm-community'
+          native-image-job-reports: 'true'
 
-      - name: 🧪 Lancer les tests
-        run: ./mvnw test -B --no-transfer-progress
-        env:
-          # Force le profil test (H2 en mémoire)
-          SPRING_PROFILES_ACTIVE: test
+      - name: Build native image
+        run: ./mvnw -Pnative native:compile -DskipTests
 
-      - name: 📊 Upload résultats de tests (optionnel)
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: test-results
-          path: target/surefire-reports/
-          retention-days: 7
-
-  # ───────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Build natif GraalVM + Push sur GHCR
-  #
-  # La compilation native se fait DANS le Dockerfile (stage "builder").
-  # Le runner n'a pas besoin d'avoir GraalVM installé.
-  # Durée estimée : 15-25 min au premier build, ~8-12 min avec cache Docker GHA.
-  # ───────────────────────────────────────────────────────────────────────────
-  build-and-push:
-    name: 🔨 Build GraalVM Native + Push GHCR
-    runs-on: ubuntu-latest
-    needs: test  # Ne lance que si les tests passent
-
-    permissions:
-      contents: read
-      packages: write  # Nécessaire pour pousser sur GHCR
-
-    outputs:
-      # On expose l'image digest pour que le job deploy sache exactement
-      # quelle image déployer (plus fiable que le tag "latest")
-      image-digest: ${{ steps.build.outputs.digest }}
-      image-tag: ${{ steps.meta.outputs.version }}
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      # ── Configuration de QEMU (multi-arch, optionnel mais bonne pratique) ──
-      - name: 🔧 Setup QEMU
-        uses: docker/setup-qemu-action@v3
-
-      # ── Buildx : nécessaire pour le cache type=gha et les builds avancés ──
-      - name: 🔧 Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          # Utilise le driver docker-container pour le cache multicouches
-          driver-opts: |
-            network=host
-
-      # ── Login GHCR avec le token GitHub (gratuit pour repos publics) ───────
-      - name: 🔐 Login sur GHCR
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # ── Génération des tags et labels Docker ─────────────────────────────
-      # Tags produits :
-      #   ghcr.io/user/repo:latest
-      #   ghcr.io/user/repo:sha-<7chars>  (pour traçabilité)
-      #   ghcr.io/user/repo:main          (branche)
-      - name: 🏷️ Métadonnées Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-,format=short
-            type=ref,event=branch
-          labels: |
-            org.opencontainers.image.title=Ride App Backend
-            org.opencontainers.image.description=Spring Boot 3.4.2 GraalVM Native
-            org.opencontainers.image.vendor=Karibu
-
-      # ── Build Docker multi-stage + Push sur GHCR ─────────────────────────
-      # Le cache type=gha stocke les layers Docker dans le cache GitHub Actions.
-      # Layers cachées séparément :
-      #   - Layer "dépendances Maven" (invalidée si pom.xml change)
-      #   - Layer "compilation source" (invalidée si src/ change)
-      #   - Layer "build natif GraalVM" (la plus lourde, ~10 min)
-      - name: 🏗️ Build & Push image native GraalVM
-        id: build
-        uses: docker/build-push-action@v6
+      - name: Build & push Docker image
+        uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          # ── Stratégie de cache ─────────────────────────────────────────
-          # type=gha     = GitHub Actions Cache (gratuit, ~10 GB pour repos publics)
-          # mode=max     = cache toutes les couches intermédiaires (y compris builder)
-          #                Sans mode=max, seule l'image finale est cachée → inutile
-          #                car c'est la couche builder (GraalVM compile) qui est lente.
-          cache-from: type=gha,scope=${{ github.ref_name }}-native
-          cache-to: type=gha,mode=max,scope=${{ github.ref_name }}-native
-          # Pas de --no-cache : on veut précisément utiliser le cache !
-          # Le cache est automatiquement invalidé si les layers source changent.
+          tags: ghcr.io/${{ github.repository }}/ride-app:latest
 
-      # ── Afficher le digest pour traçabilité dans les logs ─────────────────
-      - name: 📋 Image digest
+      - name: Trigger Render deploy
         run: |
-          echo "✅ Image buildée et poussée avec succès"
-          echo "📦 Digest : ${{ steps.build.outputs.digest }}"
-          echo "🏷️  Tags   : ${{ steps.meta.outputs.tags }}"
-
-  # ───────────────────────────────────────────────────────────────────────────
-  # JOB 3 — Déploiement sur Back4app Containers
-  #
-  # Back4app récupère l'image depuis GHCR et redémarre le container.
-  # L'API REST Back4app Containers attend :
-  #   POST https://containers.back4app.com/redeploy
-  #   Headers: X-Back4App-Application-Id, X-Back4App-REST-API-Key
-  #   Body: { "image": "ghcr.io/user/repo:latest" }
-  # ───────────────────────────────────────────────────────────────────────────
-  deploy:
-    name: 🚀 Deploy sur Back4app
-    runs-on: ubuntu-latest
-    needs: build-and-push  # Attend que l'image soit sur GHCR
-
-    # Environnement GitHub (optionnel mais recommandé pour les logs de déploiement)
-    environment:
-      name: production
-      url: https://containers.back4app.com  # Remplacer par votre URL app
-
-    steps:
-      - name: 📡 Déclencher le redéploiement Back4app
-        id: deploy
-        run: |
-          echo "🚀 Déploiement de ghcr.io/${{ env.IMAGE_NAME }}:latest sur Back4app..."
-
-          HTTP_STATUS=$(curl -s -o /tmp/back4app_response.json -w "%{http_code}" \
-            -X POST \
-            -H "X-Back4App-Application-Id: ${{ secrets.BACK4APP_APP_ID }}" \
-            -H "X-Back4App-REST-API-Key: ${{ secrets.BACK4APP_REST_API_KEY }}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "image": "ghcr.io/${{ github.repository }}:latest"
-            }' \
-            https://containers.back4app.com/redeploy)
-
-          echo "📬 Statut HTTP : $HTTP_STATUS"
-          echo "📄 Réponse :"
-          cat /tmp/back4app_response.json
-
-          # Vérification du succès (2xx)
-          if [[ "$HTTP_STATUS" -lt 200 || "$HTTP_STATUS" -ge 300 ]]; then
-            echo "❌ Échec du redéploiement Back4app (HTTP $HTTP_STATUS)"
-            exit 1
-          fi
-
-          echo "✅ Redéploiement déclenché avec succès !"
-
-      # ── Résumé dans l'interface GitHub Actions ────────────────────────────
-      - name: 📝 Résumé du déploiement
-        if: success()
-        run: |
-          echo "## 🚀 Déploiement réussi" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Paramètre | Valeur |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Image | \`ghcr.io/${{ github.repository }}:latest\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Branche | \`${{ github.ref_name }}\` |" >> $GITHUB_STEP_SUMMARY
-          echo "| Déclenché par | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
-
-      - name: ❌ Résumé en cas d'échec
-        if: failure()
-        run: |
-          echo "## ❌ Échec du déploiement" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Vérifiez les secrets \`BACK4APP_APP_ID\` et \`BACK4APP_REST_API_KEY\`" >> $GITHUB_STEP_SUMMARY
-          echo "dans Settings → Secrets and variables → Actions" >> $GITHUB_STEP_SUMMARY
+          curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
