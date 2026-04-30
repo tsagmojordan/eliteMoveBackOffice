@@ -1,24 +1,11 @@
-# ── Stage 1 : Build ──────────────────────────────────────────
-FROM maven:3.9-eclipse-temurin-21 AS builder
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Copier d'abord le pom.xml pour profiter du cache des dépendances
-COPY pom.xml .
-RUN mvn dependency:go-offline -q
+COPY target/ride-app-backend .
 
-# Copier les sources et compiler
-COPY src ./src
-RUN mvn package -DskipTests -q
-
-# ── Stage 2 : Runtime ─────────────────────────────────────────
-FROM eclipse-temurin:21-jre-alpine
-
-WORKDIR /app
-
-# Copier uniquement le JAR produit
-COPY --from=builder /app/target/*.jar app.jar
+RUN chmod +x ride-app-backend
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["./ride-app-backend", "--spring.profiles.active=prod"]
