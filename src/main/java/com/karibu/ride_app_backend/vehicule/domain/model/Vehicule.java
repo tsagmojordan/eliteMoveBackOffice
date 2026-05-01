@@ -19,6 +19,9 @@ public class Vehicule {
     private String brand;
     private String model;
     private int year;
+    private String photo1;
+    private String photo2;
+    private String photo3;
     private String licensePlate;
     private VehiculeClass vehiculeClass;
     private VehiculeStatus status;
@@ -39,4 +42,14 @@ public class Vehicule {
     public boolean isAvailable() {
         return this.status == VehiculeStatus.AVAILABLE;
     }
+
+    public void addPrincipalImage(String principalPath) {
+        if (principalPath == null) throw new RuntimeException("Vous devez renseigner au moins une photo principale");
+        this.photo1 = principalPath;
+    }
+
+    public void addSecondImage(String path2) {this.photo2 = path2;}
+
+
+    public void addSThridImage(String path3)  {this.photo3 = path3;}
 }

@@ -27,6 +27,7 @@ public class VehiculeMapper {
                 .vehiculeClass(vehicule.getVehiculeClass())
                 .status(vehicule.getStatus())
                 .price(vehicule.getPrice())
+
                 .build();
     }
 }

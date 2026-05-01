@@ -45,6 +45,15 @@ public class JpaVehiculeEntity {
     @Column(name = "license_plate", nullable = false, unique = true)
     private String licensePlate;
 
+    @Column(name = "image1")
+    private String principalImagePath;
+
+    @Column(name = "image2")
+    private String secondImagePath;
+
+    @Column(name = "image3")
+    private String thirdImagePath;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicule_class", nullable = false)
     private VehiculeClass vehiculeClass;

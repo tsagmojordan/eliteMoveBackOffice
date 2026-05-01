@@ -5,11 +5,14 @@ import com.karibu.ride_app_backend.vehicule.api.dto.VehiculeDto;
 import com.karibu.ride_app_backend.vehicule.api.mapper.VehiculeMapper;
 import com.karibu.ride_app_backend.vehicule.application.port.in.ManageVehiculeUseCase;
 import com.karibu.ride_app_backend.vehicule.domain.model.Vehicule;
+import jakarta.mail.Multipart;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,10 +25,14 @@ public class VehiculeController {
 
     private final ManageVehiculeUseCase manageVehiculeUseCase;
 
-    @PostMapping
-    public ResponseEntity<VehiculeDto> createVehicule(@Valid @RequestBody CreateVehiculeRequest request) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<VehiculeDto> createVehicule(
+            @Valid
+            @RequestPart("request") CreateVehiculeRequest request,
+            @RequestPart(value = "photos", required = false) List<MultipartFile> photos
+    ) {
         Vehicule vehicule = VehiculeMapper.toDomain(request);
-        Vehicule created = manageVehiculeUseCase.createVehicule(vehicule);
+        Vehicule created = manageVehiculeUseCase.createVehicule(vehicule, photos);
         return ResponseEntity.status(HttpStatus.CREATED).body(VehiculeMapper.toDto(created));
     }
 
@@ -62,6 +69,12 @@ public class VehiculeController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVehicule(@PathVariable UUID id) {
         manageVehiculeUseCase.deleteVehicule(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<Void> updateVehiculeStatus(@PathVariable UUID id, @RequestParam String status) {
+        manageVehiculeUseCase.updateVehiculeStatus(id, status);
         return ResponseEntity.noContent().build();
     }
 }

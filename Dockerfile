@@ -1,25 +1,26 @@
-# ── Étape 1 : Build natif avec GraalVM ──────────────────────────────────────
+# Étape 1 : Construction de l'image native
 FROM ghcr.io/graalvm/native-image-community:21 AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Installer Maven
-RUN microdnf install -y maven findutils
+# Copier les fichiers de configuration du build (Maven ici, adaptez pour Gradle)
+COPY . .
 
-# Copier et builder
-COPY pom.xml .
-COPY src ./src
-RUN mvn clean package -Pnative -DskipTests
+# Construction de l'image native (Exemple Maven)
+# On utilise l'option -Pnative pour le plugin GraalVM
+RUN ./mvnw native:compile -Pnative -DskipTests
 
-# ── Étape 2 : Image finale légère ────────────────────────────────────────────
+# Étape 2 : Image d'exécution (ultra-légère)
 FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# Copier le binaire natif
-COPY --from=builder /app/target/mon-app .
+# Copier l'exécutable généré depuis l'étape précédente
+# Remplacez "mon-app-java" par le nom de votre exécutable généré dans /target
+COPY --from=builder /build/target/mon-app-java /app/server
 
-# Back4app utilise $PORT dynamiquement
+# Exposer le port (Render utilise souvent 8080 ou 10000)
 EXPOSE 8080
 
-CMD ["./mon-app"]
+# Lancer l'application
+CMD ["./server"]

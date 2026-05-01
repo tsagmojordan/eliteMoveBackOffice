@@ -1,16 +1,20 @@
 package com.karibu.ride_app_backend.vehicule.application.service;
 
+import com.karibu.ride_app_backend.vehicule.application.helpers.FileManager;
 import com.karibu.ride_app_backend.vehicule.application.port.in.ManageVehiculeUseCase;
 import com.karibu.ride_app_backend.vehicule.domain.exception.VehiculeNotFoundException;
 import com.karibu.ride_app_backend.vehicule.domain.model.Vehicule;
 import com.karibu.ride_app_backend.vehicule.domain.model.VehiculeStatus;
 import com.karibu.ride_app_backend.vehicule.domain.port.out.VehiculeRepository;
+import jakarta.mail.Multipart;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
@@ -18,12 +22,24 @@ public class VehiculeService implements ManageVehiculeUseCase {
 
     private final VehiculeRepository vehiculeRepository;
 
+    private final FileManager fileManager;
+
     @Override
     @Transactional
-    public Vehicule createVehicule(Vehicule vehicule) {
+    public Vehicule createVehicule(Vehicule vehicule, List<MultipartFile> photos) {
         if (vehicule.getStatus() == null) {
             vehicule.setStatus(VehiculeStatus.AVAILABLE);
         }
+        if (photos.size() > 3) {
+            throw new IllegalArgumentException("Au moins 3 photos sont requises");
+        }
+        MultipartFile photo1 = photos.get(0);
+        MultipartFile photo2 = photos.get(1);
+        MultipartFile photo3 = photos.get(2);
+        vehicule.addPrincipalImage(fileManager.save(photo1));
+        vehicule.addSecondImage(fileManager.save(photo2));
+        vehicule.addSThridImage(fileManager.save(photo3));
+
         return vehiculeRepository.save(vehicule);
     }
 
