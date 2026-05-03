@@ -29,6 +29,11 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
           chmod 600 private_key
 
+      - name: Debug secrets
+        run: |
+            echo "User: ${{ secrets.VSP_DEFAULT }}"
+            echo "IP: ${{ secrets.VPS_IP }}"
+
       - name: Connexion et deploiement sur le VPS
         run: |
           ssh -i private_key -o StrictHostKeyChecking=no -o BatchMode=yes ${{ secrets.VPS_DEFAULT }}@${{ secrets.VPS_IP }} << 'EOF'
