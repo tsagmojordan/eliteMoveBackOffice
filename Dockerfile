@@ -14,7 +14,7 @@ RUN mvn dependency:go-offline -B
 FROM dependencies AS build
 
 COPY src ./src
-RUN mvn clean package -DskipTests -o -B
+RUN mvn clean package -DskipTests -B
 
 # ================================
 # STAGE 3 : Extraction des layers Spring Boot
@@ -22,7 +22,7 @@ RUN mvn clean package -DskipTests -o -B
 FROM eclipse-temurin:21-jre-alpine AS extractor
 
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /app/target/RIDE_APP_BACKEND-0.0.1-SNAPSHOT.jar app.jar
 RUN java -Djarmode=layertools -jar app.jar extract
 
 # ================================
