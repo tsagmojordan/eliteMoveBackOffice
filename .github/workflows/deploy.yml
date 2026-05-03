@@ -1,4 +1,4 @@
-name: Build Docker Image test
+name: Build & Deploy Docker Image
 
 on:
   push:
@@ -8,44 +8,50 @@ on:
 permissions:
   contents: write
 
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      # nous allons définir plutard une logique de lancement de l'image puis de test de connexion au conternaire
+        uses: docker/setup-buildx-action@v3
 
-      - name: test de construction de l'image docker
+      - name: Test de construction de l'image Docker
         run: |
-          docker build -t web-app:latest .
+          docker build -t my-sql:latest .
 
       - name: Configurer la clé SSH
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key
-          chmod 600 private_key
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/private_key
+          chmod 600 ~/.ssh/private_key
 
-      - name: Debug secrets
+      - name: Connexion et déploiement sur le VPS
         run: |
-            echo "User: ${{ secrets.VSP_DEFAULT }}"
-            echo "IP: ${{ secrets.VPS_IP }}"
+          ssh -i ~/.ssh/private_key \
+              -o StrictHostKeyChecking=no \
+              -o BatchMode=yes \
+              ${{ secrets.VSP_DEFAULT }}@${{ secrets.VPS_IP }} << 'EOF'
 
-      - name: Connexion et deploiement sur le VPS
-        run: |
-          ssh -i private_key -o StrictHostKeyChecking=no -o BatchMode=yes ${{ secrets.VPS_DEFAULT }}@${{ secrets.VPS_IP }} << 'EOF'
-            cd test
+            cd .test
             echo "---------------------------- git pull ------------------------------------"
             git pull
 
-            docker build -t test .
-            docker run -p 7820:7820 users
+            echo "---------------------------- docker build --------------------------------"
+            docker build -t my-sql:latest .
+
+            echo "---------------------------- arrêt ancien conteneur ---------------------"
+            docker stop my-sql 2>/dev/null || true
+            docker rm   my-sql 2>/dev/null || true
+
+            echo "---------------------------- lancement nouveau conteneur ----------------"
+            docker run -d \
+              --name my-sql \
+              --restart unless-stopped \
+              -p 7820:7820 \
+              my-sql:latest
+
             docker ps
           EOF
-
-
-#
-
