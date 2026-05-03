@@ -1,26 +1,51 @@
-# Étape 1 : Construction de l'image native
-FROM ghcr.io/graalvm/native-image-community:21 AS builder
-
-WORKDIR /build
-
-# Copier les fichiers de configuration du build (Maven ici, adaptez pour Gradle)
-COPY . .
-
-# Construction de l'image native (Exemple Maven)
-# On utilise l'option -Pnative pour le plugin GraalVM
-RUN ./mvnw native:compile -Pnative -DskipTests
-
-# Étape 2 : Image d'exécution (ultra-légère)
-FROM debian:bookworm-slim
+# ================================
+# STAGE 1 : Dépendances (cache layer)
+# ================================
+FROM maven:3.9-eclipse-temurin-21-alpine AS dependencies
 
 WORKDIR /app
 
-# Copier l'exécutable généré depuis l'étape précédente
-# Remplacez "mon-app-java" par le nom de votre exécutable généré dans /target
-COPY --from=builder /build/target/mon-app-java /app/server
+COPY pom.xml .
+RUN mvn dependency:go-offline -B
 
-# Exposer le port (Render utilise souvent 8080 ou 10000)
-EXPOSE 8080
+# ================================
+# STAGE 2 : Build
+# ================================
+FROM dependencies AS build
 
-# Lancer l'application
-CMD ["./server"]
+COPY src ./src
+RUN mvn clean package -DskipTests -o -B
+
+# ================================
+# STAGE 3 : Extraction des layers Spring Boot
+# ================================
+FROM eclipse-temurin:21-jre-alpine AS extractor
+
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+RUN java -Djarmode=layertools -jar app.jar extract
+
+# ================================
+# STAGE 4 : Image finale minimale
+# ================================
+FROM eclipse-temurin:21-jre-alpine AS final
+
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
+WORKDIR /app
+
+COPY --from=extractor /app/dependencies ./
+COPY --from=extractor /app/spring-boot-loader ./
+COPY --from=extractor /app/snapshot-dependencies ./
+COPY --from=extractor /app/application ./
+
+EXPOSE 7820
+
+ENV JAVA_OPTS="-XX:+UseContainerSupport \
+               -XX:MaxRAMPercentage=75.0 \
+               -XX:+UseG1GC \
+               -XX:+OptimizeStringConcat \
+               -Djava.security.egd=file:/dev/./urandom"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS org.springframework.boot.loader.launch.JarLauncher"]
