@@ -3,7 +3,9 @@ package com.karibu.ride_app_backend.authentication.config;
 import com.karibu.ride_app_backend.authentication.utils.ApiResponse;
 import com.karibu.ride_app_backend.call.domain.exception.CallNotFoundException;
 import com.karibu.ride_app_backend.call.domain.exception.InvalidCallStateException;
+import com.karibu.ride_app_backend.vehicule.domain.model.Vehicule;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,6 +29,7 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
+@Profile("prod")
 public class GlobalExceptionHandler {
 
         /**
@@ -124,6 +127,15 @@ public class GlobalExceptionHandler {
                 return ResponseEntity
                                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(ApiResponse.error("Une erreur interne s'est produite",
+                                                HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+
+        @ExceptionHandler(Vehicule.VehiculeException.class)
+        public ResponseEntity<ApiResponse<Void>> handleVehiculeException(final Vehicule.VehiculeException ex) {
+                log.debug("[GlobalExceptionHandler] Erreur interne non gérée : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                                .body(ApiResponse.error(ex.getMessage(),
                                                 HttpStatus.INTERNAL_SERVER_ERROR));
         }
 }

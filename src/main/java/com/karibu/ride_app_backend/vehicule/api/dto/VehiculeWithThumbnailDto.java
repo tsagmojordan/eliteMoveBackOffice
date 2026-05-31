@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class VehiculeDto {
+public class VehiculeWithThumbnailDto {
     private UUID id;
     private String brand;
     private String model;
@@ -17,14 +17,11 @@ public class VehiculeDto {
     private String licensePlate;
     private VehiculeClass vehiculeClass;
     private VehiculeStatus status;
-    private double longitude;
-    private double latitude;
     private int price;
     private String photo1;
     private String photo2;
     private String photo3;
     private String photo1MimeType;
-    private String photo2MimeType;
-    private String photo3MimeType;
     private String photo1ThumbnailPath;
+    private String thumbnailBase64;
 }

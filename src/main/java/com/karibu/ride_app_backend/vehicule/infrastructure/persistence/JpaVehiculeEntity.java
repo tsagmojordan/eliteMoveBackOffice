@@ -54,6 +54,20 @@ public class JpaVehiculeEntity {
     @Column(name = "image3")
     private String thirdImagePath;
 
+    @Column(name = "image1_mime_type")
+    private String photo1MimeType;
+
+    @Column(name = "image2_mime_type")
+    private String photo2MimeType;
+
+    @Column(name = "image3_mime_type")
+    private String photo3MimeType;
+
+    @Column(name = "photo1_thumbnail_path")
+    private String photo1ThumbnailPath;
+
+    private double price;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "vehicule_class", nullable = false)
     private VehiculeClass vehiculeClass;

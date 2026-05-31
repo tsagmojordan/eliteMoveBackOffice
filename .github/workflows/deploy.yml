@@ -50,7 +50,7 @@ jobs:
             docker run -d \
               --name my-sql \
               --restart unless-stopped \
-              -p 7820:7820 \
+              -p 7820:8080 \
               my-sql:latest
 
             docker ps

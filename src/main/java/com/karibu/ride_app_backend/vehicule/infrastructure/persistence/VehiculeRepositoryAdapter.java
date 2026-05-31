@@ -24,11 +24,16 @@ public class VehiculeRepositoryAdapter implements VehiculeRepository {
                 .brand(vehicule.getBrand())
                 .model(vehicule.getModel())
                 .year(vehicule.getYear())
+                .price(vehicule.getPrice())
                 .licensePlate(vehicule.getLicensePlate())
                 .vehiculeClass(vehicule.getVehiculeClass())
                 .principalImagePath(vehicule.getPhoto1())
                 .secondImagePath(vehicule.getPhoto2())
                 .thirdImagePath(vehicule.getPhoto3())
+                .photo1MimeType(vehicule.getPhoto1MimeType())
+                .photo2MimeType(vehicule.getPhoto2MimeType())
+                .photo3MimeType(vehicule.getPhoto3MimeType())
+                .photo1ThumbnailPath(vehicule.getPhoto1ThumbnailPath())
                 .status(vehicule.getStatus())
                 .build();
         JpaVehiculeEntity saved = jpaVehiculeRepository.save(entity);
@@ -71,6 +76,10 @@ public class VehiculeRepositoryAdapter implements VehiculeRepository {
                 .photo1(entity.getPrincipalImagePath())
                 .photo2(entity.getSecondImagePath())
                 .photo3(entity.getThirdImagePath())
+                .photo1MimeType(entity.getPhoto1MimeType())
+                .photo2MimeType(entity.getPhoto2MimeType())
+                .photo3MimeType(entity.getPhoto3MimeType())
+                .photo1ThumbnailPath(entity.getPhoto1ThumbnailPath())
                 .build();
     }
 }
