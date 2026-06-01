@@ -4,6 +4,7 @@ import com.karibu.ride_app_backend.ride.application.port.in.ManageRideUseCase;
 import com.karibu.ride_app_backend.ride.domain.exception.RideNotFoundException;
 import com.karibu.ride_app_backend.ride.domain.model.Ride;
 import com.karibu.ride_app_backend.ride.domain.model.RideStatus;
+import com.karibu.ride_app_backend.ride.domain.port.out.EventPublisherPort;
 import com.karibu.ride_app_backend.ride.domain.port.out.NotificationPort;
 import com.karibu.ride_app_backend.ride.domain.port.out.RideRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,8 @@ public class RideService implements ManageRideUseCase {
 
     private final RideRepository rideRepository;
     private final NotificationPort notificationPort;
+    private final EventPublisherPort eventPublisherPort;
+
 
     @Override
     @Transactional
@@ -28,7 +31,7 @@ public class RideService implements ManageRideUseCase {
         ride.setRequestedAt(LocalDateTime.now());
         Ride savedRide = rideRepository.save(ride);
 
-        notificationPort.notifyAdmin("Nouvelle demande de course", savedRide.getId());
+        eventPublisherPort.publishRideCreated(savedRide);
 
         return savedRide;
     }

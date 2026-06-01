@@ -16,7 +16,7 @@ public class FileManagerImpl implements FileManager {
 
     private static final String DIRECTORY = "upload/picture/vehicule";
     private static final String THUMBNAIL_DIRECTORY = "upload/picture/vehicule/thumbnails";
-    private static final long MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+    private static final long MAX_SIZE = 2 * 1024 * 1024;
     private final List<String> ALLOWED_EXTENSIONS = List.of("jpeg", "jpg", "png", "webp");
     private final MimeTypeDetector mimeTypeDetector;
     private final ThumbnailGenerator thumbnailGenerator;
@@ -39,7 +39,6 @@ public class FileManagerImpl implements FileManager {
             throw new Vehicule.VehiculeException("Format image non supporté : " + extension);
         }
 
-        // Résoudre le chemin relatif en chemin absolu
         File file = new File(System.getProperty("user.dir") + "/" + DIRECTORY + "/" + newFileName);
         file.getParentFile().mkdirs();
 
@@ -73,22 +72,31 @@ public class FileManagerImpl implements FileManager {
     }
 
     /**
-     * Sauvegarde une photo et génère sa miniature
-     * @param photo le fichier photo
-     * @return le path du fichier photo (la miniature est générée automatiquement)
+     * Sauvegarde une photo ET génère sa miniature
+     * Génère d'abord la miniature depuis les bytes, puis sauvegarde les deux
      */
+    @Override
     public String saveWithThumbnail(MultipartFile photo) {
-        String photoPath = save(photo);
-        
         try {
-            byte[] thumbnailData = thumbnailGenerator.generateThumbnail(photo);
+            // Lire les bytes du fichier AVANT toute manipulation
+            byte[] photoBytes = photo.getBytes();
+            
+            // Générer la miniature depuis les bytes
+            byte[] thumbnailData = thumbnailGenerator.generateThumbnailFromBytes(photoBytes);
+            
+            // Maintenant sauvegarder le fichier original
+            String photoPath = save(photo);
+            
+            // Sauvegarder la miniature avec le nom dérivé
             String thumbnailFileName = photoPath.replaceFirst("\\.\\w+$", "") + "_thumb.jpg";
             saveThumbnail(thumbnailFileName, thumbnailData);
+            
+            return photoPath;
+        } catch (IOException e) {
+            throw new RuntimeException("Erreur lors de la lecture du fichier photo : " + e.getMessage(), e);
         } catch (Exception e) {
-            throw new RuntimeException("Erreur lors de la génération de la miniature pour : " + photoPath, e);
+            throw new RuntimeException("Erreur lors de la génération de la miniature : " + e.getMessage(), e);
         }
-        
-        return photoPath;
     }
 
     /**
@@ -108,6 +116,7 @@ public class FileManagerImpl implements FileManager {
     /**
      * Récupère le path du thumbnail pour un fichier photo
      */
+    @Override
     public String getThumbnailPath(String photoFileName) {
         return photoFileName.replaceFirst("\\.\\w+$", "") + "_thumb.jpg";
     }
@@ -115,6 +124,7 @@ public class FileManagerImpl implements FileManager {
     /**
      * Récupère le thumbnail par son path
      */
+    @Override
     public byte[] getThumbnail(String thumbnailFileName) {
         File file = new File(System.getProperty("user.dir") + "/" + THUMBNAIL_DIRECTORY + "/" + thumbnailFileName);
 

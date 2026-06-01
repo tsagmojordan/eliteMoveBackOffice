@@ -1,0 +1,42 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ride-app-postgres
+    environment:
+      POSTGRES_DB: ride_app_db
+      POSTGRES_USER: ${DB_USERNAME:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Admin@1234}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ride-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ride_app_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ride-app:
+    build: .
+    container_name: ride-app-backend
+    ports:
+      - "7820:7820"
+    environment:
+      DB_USERNAME: ${DB_USERNAME:-admin}
+      DB_PASSWORD: ${DB_PASSWORD:-Admin@1234}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ride_app_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ride-app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ride-app-network:
+    driver: bridge

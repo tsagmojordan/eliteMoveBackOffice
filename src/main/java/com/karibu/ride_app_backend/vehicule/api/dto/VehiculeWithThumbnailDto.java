@@ -22,6 +22,5 @@ public class VehiculeWithThumbnailDto {
     private String photo2;
     private String photo3;
     private String photo1MimeType;
-    private String photo1ThumbnailPath;
-    private String thumbnailBase64;
+    private String thumbnail;
 }

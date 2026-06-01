@@ -232,8 +232,7 @@ public class VehiculeService implements ManageVehiculeUseCase {
                 .photo2(vehicule.getPhoto2())
                 .photo3(vehicule.getPhoto3())
                 .photo1MimeType(vehicule.getPhoto1MimeType())
-                .photo1ThumbnailPath(vehicule.getPhoto1ThumbnailPath())
-                .thumbnailBase64(thumbnailBase64)
+                .thumbnail(thumbnailBase64)
                 .build();
     }
 }

@@ -8,6 +8,7 @@ import com.karibu.ride_app_backend.shared.event.DeviceStateChangedEvent;
 import com.karibu.ride_app_backend.shared.event.NotificationRequestedEvent;
 import com.karibu.ride_app_backend.shared.event.UserCreatedEvent;
 import com.karibu.ride_app_backend.shared.event.UserLoggedInEvent;
+// ...existing imports...
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -134,4 +135,6 @@ public class NotificationEventListener {
 
         dispatcher.dispatch(notifEvent);
     }
+
+    // Ride events are handled in a dedicated listener: RideEventListener
 }
