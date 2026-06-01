@@ -19,8 +19,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Test de construction de l'image Docker
-        run: |
-          docker build -t my-sql:latest .
+        run: docker compose build
 
       - name: Configurer la clé SSH
         run: |
@@ -39,19 +38,11 @@ jobs:
             echo "---------------------------- git pull ------------------------------------"
             git pull
 
-            echo "---------------------------- docker build --------------------------------"
-            docker build -t my-sql:latest .
+            echo "---------------------------- arrêt anciens conteneurs -------------------"
+            docker compose down
 
-            echo "---------------------------- arrêt ancien conteneur ---------------------"
-            docker stop my-sql 2>/dev/null || true
-            docker rm   my-sql 2>/dev/null || true
+            echo "---------------------------- build & lancement --------------------------"
+            docker compose up -d --build
 
-            echo "---------------------------- lancement nouveau conteneur ----------------"
-            docker run -d \
-              --name my-sql \
-              --restart unless-stopped \
-              -p 7820:8080 \
-              my-sql:latest
-
-            docker ps
+            docker compose ps
           EOF
