@@ -1,0 +1,25 @@
+# Build locaux et artifacts
+target/
+out/
+*.jar
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# VCS et IDE
+.git/
+.gitignore
+.idea/
+.vscode/
+*.iml
+
+# Fichiers runtime locaux
+upload/
+*.log
+
+# Wrapper Maven (inutile : le build passe par l'image maven)
+.mvn/
+mvnw
+mvnw.cmd

@@ -27,15 +27,25 @@ services:
     environment:
       DB_USERNAME: ${DB_USERNAME:-admin}
       DB_PASSWORD: ${DB_PASSWORD:-Admin@1234}
+      # Les propriétés Spring doivent être passées au format SPRING_* (relaxed binding)
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ride_app_db
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-admin}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-Admin@1234}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      # Les photos sont écrites dans {user.dir}/upload/picture/vehicule
+      # et référencées en base : elles doivent survivre aux re-créations du conteneur
+      - ride_app_uploads:/app/upload
     networks:
       - ride-app-network
 
 volumes:
   postgres_data:
+  ride_app_uploads:
 
 networks:
   ride-app-network:
