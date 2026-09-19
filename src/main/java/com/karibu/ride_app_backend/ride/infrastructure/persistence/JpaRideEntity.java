@@ -54,4 +54,8 @@ public class JpaRideEntity {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    /** Prix de la course en FCFA (null tant que la course n'est pas acceptée). */
+    @Column(name = "price")
+    private Double price;
 }

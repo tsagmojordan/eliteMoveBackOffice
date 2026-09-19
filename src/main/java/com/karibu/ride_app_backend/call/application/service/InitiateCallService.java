@@ -51,8 +51,8 @@ public class InitiateCallService implements InitiateCallUseCase {
             savedCall.startRinging();
             callRepository.save(savedCall);
 
-            // 4. Envoyer la sonnerie au destinataire (port out)
-            signalingPort.notifyIncomingCall(savedCall.getId(), savedCall.getCalleeId(), savedCall.getCallerId());
+            // 4. Pousser l'appel entrant au destinataire (port out)
+            signalingPort.notifyIncomingCall(savedCall);
 
             log.info("[InitiateCallService] Appel id={} en sonnerie vers callee={}",
                     savedCall.getId(), savedCall.getCalleeId());

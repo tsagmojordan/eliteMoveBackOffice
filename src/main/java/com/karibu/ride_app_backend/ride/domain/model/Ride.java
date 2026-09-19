@@ -25,6 +25,12 @@ public class Ride {
     private LocalDateTime requestedAt;
     private LocalDateTime completedAt;
 
+    /**
+     * Prix de la course en FCFA, calculé et persisté au moment de
+     * l'acceptation (null tant que la course n'est pas acceptée).
+     */
+    private Double price;
+
     public void accept() {
         this.status = RideStatus.ACCEPTED;
     }

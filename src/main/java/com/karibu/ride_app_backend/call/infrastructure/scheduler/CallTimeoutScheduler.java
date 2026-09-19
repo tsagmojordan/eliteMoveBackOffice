@@ -59,8 +59,9 @@ public class CallTimeoutScheduler {
                     call.markAsMissed();
                     callRepository.save(call);
 
-                    // Notifier le destinataire que la sonnerie a expiré
-                    signalingPort.notifyCallCancelled(call.getId(), call.getCalleeId());
+                    // Notifier les deux parties que la sonnerie a expiré (MISSED)
+                    signalingPort.notifyCallStatus(call.getId(), call.getStatus(),
+                            call.getCallerId(), call.getCalleeId());
                     count++;
 
                     log.info("[CallTimeoutScheduler] Appel id={} marqué MISSED (timeout {}s).",

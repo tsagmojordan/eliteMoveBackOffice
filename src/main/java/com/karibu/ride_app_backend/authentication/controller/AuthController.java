@@ -1,12 +1,16 @@
 package com.karibu.ride_app_backend.authentication.controller;
 
+import com.karibu.ride_app_backend.authentication.dto.request.CreateUserRequest;
 import com.karibu.ride_app_backend.authentication.dto.request.LoginRequest;
 import com.karibu.ride_app_backend.authentication.dto.response.AuthResponse;
+import com.karibu.ride_app_backend.authentication.dto.response.UserResponse;
 import com.karibu.ride_app_backend.authentication.service.AuthService;
+import com.karibu.ride_app_backend.authentication.service.UserService;
 import com.karibu.ride_app_backend.authentication.utils.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +28,30 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
+
+    /**
+     * Inscription publique d'un nouvel utilisateur (application mobile).
+     *
+     * <p>
+     * POST /api/v1/auth/register — sous {@code /api/v1/auth/**}, donc
+     * {@code permitAll} dans {@code SecurityConfig} (aucune authentification
+     * requise). Réutilise le même use case que {@code POST /api/v1/users}
+     * (validation, unicité username/email, rôles par défaut), qui reste
+     * réservé aux admins.
+     *
+     * @param request Informations d'inscription.
+     * @return L'utilisateur créé (sans jamais renvoyer le hash du mot de passe).
+     */
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<UserResponse>> register(
+            @Valid @RequestBody final CreateUserRequest request) {
+        log.debug("[AuthController] Inscription publique — username={}", request.username());
+        final UserResponse created = userService.create(request);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.created("Inscription réussie", created));
+    }
 
     /**
      * Authentifie un utilisateur et retourne ses tokens JWT.

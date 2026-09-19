@@ -25,6 +25,7 @@ public class RideMapper {
                 .status(ride.getStatus())
                 .requestedAt(ride.getRequestedAt())
                 .completedAt(ride.getCompletedAt())
+                .price(ride.getPrice())
                 .build();
     }
 }

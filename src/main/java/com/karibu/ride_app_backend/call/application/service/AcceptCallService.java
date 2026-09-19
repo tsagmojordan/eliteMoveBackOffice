@@ -47,8 +47,9 @@ public class AcceptCallService implements AcceptCallUseCase {
             call.accept();
             callRepository.save(call);
 
-            // Notifier l'appelant que son appel est décroché
-            signalingPort.notifyCallAccepted(call.getId(), call.getCallerId());
+            // Notifier les deux parties que l'appel est décroché
+            signalingPort.notifyCallStatus(call.getId(), call.getStatus(),
+                    call.getCallerId(), call.getCalleeId());
 
             log.info("[AcceptCallService] Appel id={} accepté. Session WebRTC en cours d'établissement.", call.getId());
         } catch (IllegalStateException ex) {

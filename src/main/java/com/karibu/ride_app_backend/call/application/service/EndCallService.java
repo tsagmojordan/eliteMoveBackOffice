@@ -55,7 +55,8 @@ public class EndCallService implements EndCallUseCase {
             callRepository.save(call);
 
             // Notifier les deux parties de la fin
-            signalingPort.notifyCallEnded(call.getId(), call.getCallerId(), call.getCalleeId());
+            signalingPort.notifyCallStatus(call.getId(), call.getStatus(),
+                    call.getCallerId(), call.getCalleeId());
 
             log.info("[EndCallService] Appel id={} terminé. Durée: {}s. Raison: {}",
                     call.getId(), call.getDurationSeconds(), reason);

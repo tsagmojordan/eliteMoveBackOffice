@@ -104,14 +104,25 @@ ThumbnailGenerator
 
 ```
 POST /api/v1/vehicules (multipart/form-data)
-├── Photo1 → saveWithThumbnail()
-│   ├── Sauvegarde dans upload/picture/vehicule/
-│   ├── Génère miniature 200x200
-│   ├── Sauvegarde thumbnail dans upload/picture/vehicule/thumbnails/
-│   ├── Détecte MIME type
-│   └── Enregistre tous les paths en BD
-├── Photo2 → save() + detectMimeType()
-└── Photo3 → save() + detectMimeType()
+├── Part "request" (JSON) → CreateVehiculeRequest (brand, model, year, licensePlate,
+│   vehiculeClass, price, ...) — validée via @Valid
+└── Parts "photos" (fichiers, optionnels — 0 à 3)
+    ├── Photo 1 → saveWithThumbnail()
+    │   ├── Sauvegarde dans upload/picture/vehicule/
+    │   ├── Génère miniature 200x200
+    │   ├── Sauvegarde thumbnail dans upload/picture/vehicule/thumbnails/
+    │   ├── Détecte MIME type
+    │   └── Enregistre tous les paths en BD
+    ├── Photo 2 → save() + detectMimeType()
+    └── Photo 3 → save() + detectMimeType()
+```
+
+Exemple (contrôleurs réels — parts `request` + `photos`, pas `photo1/2/3`) :
+```bash
+curl -X POST http://localhost:8080/api/v1/vehicules \
+  -H "Authorization: Bearer $TOKEN" \
+  -F 'request={"brand":"Toyota","model":"Corolla","year":2022,"licensePlate":"AB-123-CD","vehiculeClass":"ECO","price":500};type=application/json' \
+  -F 'photos=@/tmp/test.jpg'
 ```
 
 ### 8️⃣ **Dépendances Ajoutées**
@@ -196,4 +207,19 @@ curl -X GET http://localhost:8080/api/v1/vehicules/with-thumbnails
 ✔️ Build package: SUCCÈS  
 ✔️ Toutes les classes compilent correctement
 ✔️ Aucune erreur ou avertissement critique
+
+## 🆕 Prix des courses (table `rides`)
+
+Le champ `price` a été ajouté à `RideDto` / `Ride` / `rides` :
+- Prix calculé au moment de l'acceptation (`PATCH /api/v1/rides/{id}/status?status=ACCEPTED`)
+  selon la classe du véhicule (ECO=500, CONFORT=1000, PREMIUM=2000, VAN=3000 FCFA ;
+  tarif ECO par défaut si pas de véhicule), puis **persisté** (stable même si les tarifs changent).
+- `price` est `null` tant que la course n'est pas acceptée, non-nul dès `ACCEPTED`.
+
+**⚠️ Migration BDD requise en production** (profil Docker : `ddl-auto: validate`, la colonne
+n'est pas créée automatiquement) :
+```sql
+ALTER TABLE rides ADD COLUMN price DOUBLE PRECISION;
+```
+⚠️ À exécuter **avant** de déployer le jar, sinon la validation Hibernate échoue au démarrage.
 

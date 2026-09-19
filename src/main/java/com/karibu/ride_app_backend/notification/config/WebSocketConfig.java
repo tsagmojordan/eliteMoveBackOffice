@@ -71,12 +71,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
                             if (userOpt.isPresent() && jwtHelper.isTokenValid(token, userOpt.get())) {
                                 User user = userOpt.get();
-                                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                                        user, null, user.getAuthorities());
 
                                 // RÈGLE CRUCIALE POUR convertAndSendToUser :
-                                // Spring Security associe cette authentification à la session WebSocket
-                                accessor.setUser(auth);
+                                // Les push ciblés (notifications /queue/alerts, appels /queue/calls)
+                                // routent sur l'UUID de l'utilisateur — le nom du principal WS doit
+                                // donc être l'UUID, sinon les messages ne sont jamais délivrés.
+                                accessor.setUser(new UserUuidAuthenticationToken(user));
                                 log.debug("[WebSocketConfig] Connexion WebSocket authentifiée pour l'utilisateur: {}",
                                         username);
                             }
@@ -88,5 +88,29 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 return message;
             }
         });
+    }
+
+    /**
+     * Token d'authentification dont le nom de principal est l'UUID de
+     * l'utilisateur.
+     *
+     * <p>
+     * {@code convertAndSendToUser(userId, ...)} délivre à la session dont le
+     * principal porte ce nom. Le token standard nomme le principal par le
+     * username ({@link User#getUsername()}) alors que tous les envois ciblés
+     * de l'application (notifications comme appels) utilisent l'UUID — ce
+     * token aligne donc le nom sur l'UUID. Le principal reste l'entité
+     * {@link User} pour les usages futurs (ex : {@code @AuthenticationPrincipal}).
+     */
+    private static final class UserUuidAuthenticationToken extends UsernamePasswordAuthenticationToken {
+
+        private UserUuidAuthenticationToken(final User user) {
+            super(user, null, user.getAuthorities());
+        }
+
+        @Override
+        public String getName() {
+            return ((User) getPrincipal()).getId().toString();
+        }
     }
 }

@@ -18,4 +18,7 @@ public class RideDto {
     private RideStatus status;
     private LocalDateTime requestedAt;
     private LocalDateTime completedAt;
+
+    /** Prix de la course en FCFA (null tant que la course n'est pas acceptée). */
+    private Double price;
 }

@@ -44,8 +44,9 @@ public class DeclineCallService implements DeclineCallUseCase {
             call.decline();
             callRepository.save(call);
 
-            // Notifier l'appelant du refus
-            signalingPort.notifyCallDeclined(call.getId(), call.getCallerId());
+            // Notifier les deux parties du refus
+            signalingPort.notifyCallStatus(call.getId(), call.getStatus(),
+                    call.getCallerId(), call.getCalleeId());
 
             log.info("[DeclineCallService] Appel id={} décliné.", call.getId());
         } catch (IllegalStateException ex) {

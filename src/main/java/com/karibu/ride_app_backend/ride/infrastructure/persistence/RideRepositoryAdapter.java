@@ -27,6 +27,7 @@ public class RideRepositoryAdapter implements RideRepository {
                 .status(ride.getStatus())
                 .requestedAt(ride.getRequestedAt())
                 .completedAt(ride.getCompletedAt())
+                .price(ride.getPrice())
                 .build();
         JpaRideEntity saved = jpaRideRepository.save(entity);
         return toDomain(saved);
@@ -61,6 +62,7 @@ public class RideRepositoryAdapter implements RideRepository {
                 .status(entity.getStatus())
                 .requestedAt(entity.getRequestedAt())
                 .completedAt(entity.getCompletedAt())
+                .price(entity.getPrice())
                 .build();
     }
 }
