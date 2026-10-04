@@ -1,52 +1,18 @@
+version: '3.8'
+
 services:
-
-  postgres:
-    image: postgres:16-alpine
-    container_name: ride-app-postgres
-    environment:
-      POSTGRES_DB: ride_app_db
-      POSTGRES_USER: ${DB_USERNAME:-admin}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-Admin@1234}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - ride-app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-admin} -d ride_app_db"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  ride-app:
-    build: .
-    container_name: ride-app-backend
+  app-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mysql-1
+    image: mysql-1:0.0.1
     ports:
       - "7820:7820"
     environment:
-      DB_USERNAME: ${DB_USERNAME:-admin}
-      DB_PASSWORD: ${DB_PASSWORD:-Admin@1234}
-      # Les propriétés Spring doivent être passées au format SPRING_* (relaxed binding)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ride_app_db
-      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-admin}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-Admin@1234}
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - PORT=7820
+      - SPRING_PROFILES_ACTIVE=prod
     volumes:
-      # Les photos sont écrites dans {user.dir}/upload/picture/vehicule
-      # et référencées en base : elles doivent survivre aux re-créations du conteneur
-      - ride_app_uploads:/app/upload
-    networks:
-      - ride-app-network
-
-volumes:
-  postgres_data:
-  ride_app_uploads:
-
-networks:
-  ride-app-network:
-    driver: bridge
+      # Rend vos images et miniatures persistantes sur votre machine hôte
+      - ./upload:/app/upload
+    restart: unless-stopped
