@@ -67,4 +67,17 @@ public interface CallRepository {
      * @return Nombre d'appels manqués.
      */
     long countMissedCallsByCalleeId(UUID calleeId);
+
+    /**
+     * Retourne les identifiants de tous les participants (appelants et
+     * destinataires) des appels dans l'un des statuts donnés.
+     *
+     * <p>
+     * Utilisé pour exclure du pool de support les administrateurs
+     * actuellement en appel.
+     *
+     * @param statuses Statuts considérés comme « actifs ».
+     * @return Ensemble des identifiants participants.
+     */
+    java.util.Set<UUID> findParticipantIdsByStatuses(java.util.Collection<CallStatus> statuses);
 }

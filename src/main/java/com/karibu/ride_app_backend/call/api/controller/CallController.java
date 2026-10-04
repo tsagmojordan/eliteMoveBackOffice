@@ -6,6 +6,7 @@ import com.karibu.ride_app_backend.call.api.dto.response.CallResponse;
 import com.karibu.ride_app_backend.call.api.dto.response.InitiateCallResponse;
 import com.karibu.ride_app_backend.call.api.mapper.CallApiMapper;
 import com.karibu.ride_app_backend.authentication.model.User;
+import com.karibu.ride_app_backend.authentication.utils.ApiResponse;
 import com.karibu.ride_app_backend.call.application.dto.CallHistoryItem;
 import com.karibu.ride_app_backend.call.application.dto.CallSummary;
 import com.karibu.ride_app_backend.call.application.port.in.*;
@@ -48,6 +49,7 @@ public class CallController {
     private final EndCallUseCase endCallUseCase;
     private final GetCallHistoryUseCase getCallHistoryUseCase;
     private final SendWebRTCSignalUseCase sendWebRTCSignalUseCase;
+    private final GetSupportAdminIdUseCase getSupportAdminIdUseCase;
     private final CallApiMapper mapper;
 
     // =========================================================================
@@ -213,6 +215,30 @@ public class CallController {
         final UUID userId = extractUserId(userDetails);
         final long count = getCallHistoryUseCase.countMissed(userId);
         return ResponseEntity.ok(Map.of("missedCalls", count));
+    }
+
+    // =========================================================================
+    // Résolution du support
+    // =========================================================================
+
+    /**
+     * GET /api/v1/calls/support/admin-id
+     * Retourne l'identifiant d'UN administrateur de support disponible
+     * (tirage aléatoire, admins en appel exclus). Le client n'apprend
+     * jamais la liste des admins — uniquement l'ID de celui à appeler.
+     */
+    @GetMapping("/support/admin-id")
+    @Operation(summary = "Admin de support à appeler",
+            description = "Retourne l'identifiant d'un administrateur de support disponible (tirage aléatoire, admins occupés exclus).")
+    public ResponseEntity<ApiResponse<String>> getSupportAdminId(
+            @AuthenticationPrincipal final UserDetails userDetails) {
+
+        final UUID requesterId = extractUserId(userDetails);
+        log.info("[CallController] GET /api/v1/calls/support/admin-id — requester={}", requesterId);
+
+        final UUID adminId = getSupportAdminIdUseCase.handle();
+        return ResponseEntity.ok(
+                ApiResponse.success("Administrateur de support disponible.", adminId.toString()));
     }
 
     // =========================================================================

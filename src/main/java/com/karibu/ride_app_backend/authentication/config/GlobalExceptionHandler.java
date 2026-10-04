@@ -3,6 +3,7 @@ package com.karibu.ride_app_backend.authentication.config;
 import com.karibu.ride_app_backend.authentication.utils.ApiResponse;
 import com.karibu.ride_app_backend.call.domain.exception.CallNotFoundException;
 import com.karibu.ride_app_backend.call.domain.exception.InvalidCallStateException;
+import com.karibu.ride_app_backend.call.domain.exception.NoSupportAdminAvailableException;
 import com.karibu.ride_app_backend.vehicule.domain.exception.VehiculeNotFoundException;
 import com.karibu.ride_app_backend.vehicule.domain.model.Vehicule;
 import lombok.extern.slf4j.Slf4j;
@@ -117,6 +118,19 @@ public class GlobalExceptionHandler {
                 return ResponseEntity
                                 .status(HttpStatus.CONFLICT)
                                 .body(ApiResponse.error(ex.getMessage(), HttpStatus.CONFLICT));
+        }
+
+        /**
+         * Traite l'absence d'administrateur de support disponible (503 Service
+         * Unavailable — Module Call).
+         */
+        @ExceptionHandler(NoSupportAdminAvailableException.class)
+        public ResponseEntity<ApiResponse<Void>> handleNoSupportAdminAvailableException(
+                        final NoSupportAdminAvailableException ex) {
+                log.debug("[GlobalExceptionHandler] Aucun admin de support disponible : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                                .body(ApiResponse.error(ex.getMessage(), HttpStatus.SERVICE_UNAVAILABLE));
         }
 
         /**

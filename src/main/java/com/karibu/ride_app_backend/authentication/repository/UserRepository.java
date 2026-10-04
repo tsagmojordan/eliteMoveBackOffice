@@ -49,4 +49,19 @@ public interface UserRepository extends JpaRepository<User, UUID> {
             "JOIN u.roles r " +
             "WHERE r.name = :roleName")
     List<User> findByRoleName(@Param("roleName") String roleName);
+
+    /**
+     * Identifiants des utilisateurs activés portant un rôle « support ».
+     *
+     * <p>
+     * Matche par inclusion sur le nom du rôle (ROLE_ADMIN, SUPER_ADMIN,
+     * ROLE_SUPER_ADMIN...) afin de rester cohérent avec le routage mobile
+     * qui interprète les rôles par inclusion ("ADMIN" ⊂ "SUPER_ADMIN").
+     *
+     * @return liste des identifiants (distincts) des administrateurs activés.
+     */
+    @Query("SELECT DISTINCT u.id FROM User u " +
+            "JOIN u.roles r " +
+            "WHERE u.enabled = true AND LOWER(r.name) LIKE '%admin%'")
+    List<UUID> findEnabledIdsWithAdminRole();
 }

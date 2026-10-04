@@ -58,4 +58,22 @@ public interface JpaCallRepository extends JpaRepository<Call, UUID> {
      * @return Liste des appels.
      */
     List<Call> findAllByStatus(CallStatus status);
+
+    /**
+     * Identifiants des appelants des appels dans l'un des statuts donnés.
+     *
+     * @param statuses Statuts recherchés.
+     * @return Liste des identifiants appelants.
+     */
+    @Query("SELECT DISTINCT c.callerId FROM Call c WHERE c.status IN :statuses")
+    List<UUID> findCallerIdsByStatuses(@Param("statuses") java.util.Collection<CallStatus> statuses);
+
+    /**
+     * Identifiants des destinataires des appels dans l'un des statuts donnés.
+     *
+     * @param statuses Statuts recherchés.
+     * @return Liste des identifiants destinataires.
+     */
+    @Query("SELECT DISTINCT c.calleeId FROM Call c WHERE c.status IN :statuses")
+    List<UUID> findCalleeIdsByStatuses(@Param("statuses") java.util.Collection<CallStatus> statuses);
 }

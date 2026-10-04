@@ -56,4 +56,12 @@ public class CallRepositoryAdapter implements CallRepository {
     public long countMissedCallsByCalleeId(final UUID calleeId) {
         return jpaRepository.countByCalleeIdAndStatus(calleeId, CallStatus.MISSED);
     }
+
+    @Override
+    public java.util.Set<UUID> findParticipantIdsByStatuses(final java.util.Collection<CallStatus> statuses) {
+        final java.util.Set<UUID> participants = new java.util.HashSet<>();
+        participants.addAll(jpaRepository.findCallerIdsByStatuses(statuses));
+        participants.addAll(jpaRepository.findCalleeIdsByStatuses(statuses));
+        return participants;
+    }
 }
