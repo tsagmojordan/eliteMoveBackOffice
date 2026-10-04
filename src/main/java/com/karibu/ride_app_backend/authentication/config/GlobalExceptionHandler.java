@@ -3,9 +3,10 @@ package com.karibu.ride_app_backend.authentication.config;
 import com.karibu.ride_app_backend.authentication.utils.ApiResponse;
 import com.karibu.ride_app_backend.call.domain.exception.CallNotFoundException;
 import com.karibu.ride_app_backend.call.domain.exception.InvalidCallStateException;
+import com.karibu.ride_app_backend.vehicule.domain.exception.VehiculeNotFoundException;
 import com.karibu.ride_app_backend.vehicule.domain.model.Vehicule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +15,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
@@ -29,7 +31,6 @@ import java.util.Map;
  */
 @Slf4j
 @RestControllerAdvice
-@Profile("prod")
 public class GlobalExceptionHandler {
 
         /**
@@ -119,6 +120,60 @@ public class GlobalExceptionHandler {
         }
 
         /**
+         * Traite les véhicules introuvables (404 — Module Vehicule).
+         */
+        @ExceptionHandler(VehiculeNotFoundException.class)
+        public ResponseEntity<ApiResponse<Void>> handleVehiculeNotFoundException(
+                        final VehiculeNotFoundException ex) {
+                log.debug("[GlobalExceptionHandler] Véhicule introuvable : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.NOT_FOUND)
+                                .body(ApiResponse.error(ex.getMessage(), HttpStatus.NOT_FOUND));
+        }
+
+        /**
+         * Traite les violations de règles métier (400) : nombre de photos, taille
+         * de fichier, transitions de statut invalides, etc.
+         */
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(
+                        final IllegalArgumentException ex) {
+                log.debug("[GlobalExceptionHandler] Argument invalide : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(ApiResponse.error(ex.getMessage(), HttpStatus.BAD_REQUEST));
+        }
+
+        /**
+         * Traite les uploads dépassant la limite multipart (413 Payload Too Large).
+         */
+        @ExceptionHandler(MaxUploadSizeExceededException.class)
+        public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(
+                        final MaxUploadSizeExceededException ex) {
+                log.debug("[GlobalExceptionHandler] Upload trop volumineux : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                                .body(ApiResponse.error(
+                                                "La photo dépasse la taille maximale autorisée (2 MB)",
+                                                HttpStatus.PAYLOAD_TOO_LARGE));
+        }
+
+        /**
+         * Traite les violations d'unicité en base (409 Conflict) — ex. plaque
+         * d'immatriculation déjà utilisée.
+         */
+        @ExceptionHandler(DataIntegrityViolationException.class)
+        public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(
+                        final DataIntegrityViolationException ex) {
+                log.debug("[GlobalExceptionHandler] Violation d'intégrité : {}", ex.getMessage());
+                return ResponseEntity
+                                .status(HttpStatus.CONFLICT)
+                                .body(ApiResponse.error(
+                                                "Cette plaque d'immatriculation est déjà utilisée par un autre véhicule",
+                                                HttpStatus.CONFLICT));
+        }
+
+        /**
          * Traite toutes les exceptions non catchées (500).
          */
         @ExceptionHandler(Exception.class)
@@ -130,12 +185,14 @@ public class GlobalExceptionHandler {
                                                 HttpStatus.INTERNAL_SERVER_ERROR));
         }
 
+        /**
+         * Traite les erreurs métier véhicule (400) — ex. format d'image non supporté.
+         */
         @ExceptionHandler(Vehicule.VehiculeException.class)
         public ResponseEntity<ApiResponse<Void>> handleVehiculeException(final Vehicule.VehiculeException ex) {
-                log.debug("[GlobalExceptionHandler] Erreur interne non gérée : {}", ex.getMessage());
+                log.debug("[GlobalExceptionHandler] Erreur métier véhicule : {}", ex.getMessage());
                 return ResponseEntity
-                                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                .body(ApiResponse.error(ex.getMessage(),
-                                                HttpStatus.INTERNAL_SERVER_ERROR));
+                                .status(HttpStatus.BAD_REQUEST)
+                                .body(ApiResponse.error(ex.getMessage(), HttpStatus.BAD_REQUEST));
         }
 }

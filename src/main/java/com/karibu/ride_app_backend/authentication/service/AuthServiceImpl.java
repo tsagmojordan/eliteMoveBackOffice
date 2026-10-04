@@ -109,7 +109,8 @@ public class AuthServiceImpl implements AuthService {
         }
 
         final String newAccessToken = jwtHelper.generateAccessToken(user);
-        revokeAllUserTokens(user);
+        // B6 : ne pas révoquer les tokens existants lors d'un refresh — sinon les
+        // requêtes parallèles de l'app mobile reçoivent des 401 en cascade.
         persistToken(user, newAccessToken);
 
         log.debug("[AuthService] Nouveau access token émis pour l'utilisateur id={}", user.getId());

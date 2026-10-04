@@ -34,13 +34,15 @@ public class VehiculeService implements ManageVehiculeUseCase {
         if (vehicule.getStatus() == null) {
             vehicule.setStatus(VehiculeStatus.AVAILABLE);
         }
-        if (photos == null || photos.size() < 3) {
-            throw new IllegalArgumentException("Au moins trois photos sont requises");
+        // Contrat C6 (front.md F1.8) : 1 à 3 photos acceptées
+        if (photos == null || photos.isEmpty()) {
+            throw new IllegalArgumentException("Au moins une photo est requise");
         }
-        
+        if (photos.size() > 3) {
+            throw new IllegalArgumentException("Au plus trois photos sont autorisées");
+        }
+
         MultipartFile photo1 = photos.get(0);
-        MultipartFile photo2 = photos.get(1);
-        MultipartFile photo3 = photos.get(2);
         
         // Photo 1 - Sauvegarder avec génération de miniature
         String photo1Path = fileManager.saveWithThumbnail(photo1);
@@ -50,17 +52,21 @@ public class VehiculeService implements ManageVehiculeUseCase {
         vehicule.setPhoto1MimeType(photo1MimeType);
         vehicule.setPhoto1ThumbnailPath(photo1ThumbnailPath);
 
-        // Photo 2
-        String photo2Path = fileManager.save(photo2);
-        String photo2MimeType = fileManager.getMimeType(photo2Path);
-        vehicule.addSecondImage(photo2Path);
-        vehicule.setPhoto2MimeType(photo2MimeType);
+        // Photo 2 (optionnelle — contrat 1 à 3 photos)
+        if (photos.size() > 1) {
+            String photo2Path = fileManager.save(photos.get(1));
+            String photo2MimeType = fileManager.getMimeType(photo2Path);
+            vehicule.addSecondImage(photo2Path);
+            vehicule.setPhoto2MimeType(photo2MimeType);
+        }
 
-        // Photo 3
-        String photo3Path = fileManager.save(photo3);
-        String photo3MimeType = fileManager.getMimeType(photo3Path);
-        vehicule.addSThridImage(photo3Path);
-        vehicule.setPhoto3MimeType(photo3MimeType);
+        // Photo 3 (optionnelle)
+        if (photos.size() > 2) {
+            String photo3Path = fileManager.save(photos.get(2));
+            String photo3MimeType = fileManager.getMimeType(photo3Path);
+            vehicule.addSThridImage(photo3Path);
+            vehicule.setPhoto3MimeType(photo3MimeType);
+        }
 
         vehicule.setLocation(new VehiculeLocation(0.1, 0.1));
 
