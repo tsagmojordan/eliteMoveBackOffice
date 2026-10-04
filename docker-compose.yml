@@ -11,7 +11,6 @@ services:
       - "7820:7820"
     environment:
       - PORT=7820
-      - SPRING_PROFILES_ACTIVE=prod
     volumes:
       # Rend vos images et miniatures persistantes sur votre machine hôte
       - ./upload:/app/upload
