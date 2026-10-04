@@ -89,7 +89,7 @@ public class UserDetailsEventListener {
                 extractRoleName(user),
                 user.getFirstname(),
                 user.getLastname(),
-                null  // Phone n'existe pas dans le modèle User actuel, donc null
+                user.getPhone()  // Alimente les canaux SMS / WhatsApp du module notification
         );
     }
 

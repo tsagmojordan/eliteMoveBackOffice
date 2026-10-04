@@ -33,6 +33,8 @@ Les points suivants ressemblent à des « bugs » vus depuis le frontend, mais l
 | C6 | Véhicules (photos, enums, multipart) | Backend **inchangé** | Frontend seul |
 | C7 | Appels temps réel | **Backend ajoute** le push WebSocket des appels entrants et de la signalisation → voir Tâche B2 | Backend + Frontend |
 | C8 | Prix d'un ride | **Backend ajoute** `price` au `RideDto` → voir Tâche B3 | Backend + Frontend |
+| C10 | Admin de support à appeler | **Nouvel endpoint** `GET /api/v1/calls/support/admin-id` → `ApiResponse<String>` (`data` = UUID de l'admin) — voir Tâche B7 | Backend + Frontend |
+| C11 | Téléphone à l'inscription | **Backend ajoute** `phone` au `CreateUserRequest` (optionnel, `^$|^\+?[0-9]{8,15}$`, max 20) et au `UserResponse` — voir Tâche B8 | Backend + Frontend |
 
 ---
 
@@ -116,6 +118,23 @@ Réponse 201 : ApiResponse<UserResponse>
 
 ---
 
+## 🧩 Tâche B6 — 🔴 CRITIQUE : le refresh révoque TOUS les tokens (problème « pas de token dans la requête »)
+
+**Symptôme signalé en prod** : l'app mobile se retrouve à envoyer des requêtes **sans token** et semble se déconnecter toute seule.
+
+**Chaîne de causes (constatée dans le code actuel)** :
+1. `JwtAuthenticationFilter` (l.91) valide chaque access token **en base** (`tokenRepository.findByTokenValue(jwt).isValid()`) — un token signé mais absent/révoqué en base = 401.
+2. `AuthService.refresh()` (l.112) appelle `revokeAllUserTokens(user)` → **chaque refresh révoque TOUS les access tokens valides du user** avant d'en persister un seul.
+3. L'app mobile déclenche plusieurs refreshs en parallèle (dashboard = requêtes concurrentes) : le refresh #2 révoque le token que le refresh #1 vient d'émettre → requête relancée = 401 → nouveau refresh → cascade.
+
+**Correctif demandé** : dans `AuthServiceImpl.refresh()`, **retirer l'appel à `revokeAllUserTokens(user)`** (le garder au login et au reset-password, où une nouvelle session doit révoquer l'ancienne). Un refresh ne doit révoquer que le token qu'il remplace, ou rien du tout — jamais les autres sessions valides.
+
+Optionnel (recommandé si facile) : rotation du refresh token au refresh (retourner un NOUVEAU refresh token à chaque refresh et révoquer l'ancien), pour que la révocation DB couvre aussi les refresh tokens.
+
+**AC** : deux refreshs consécutifs à 1 s d'intervalle ne s'invalident pas mutuellement ; l'app conserve sa session > 24 h (durée de l'access token, `application.yml` `jwt.expiration: 86400000`) ; le login continue de révoquer les tokens précédents.
+
+---
+
 ## 🧩 Tâche B5 — Vérification globale (à exécuter après B1–B3)
 
 ```bash
@@ -161,8 +180,56 @@ curl -s -X POST http://147.79.118.51:7820/api/v1/calls -H "Authorization: Bearer
 - [ ] B2 : INCOMING_CALL / SIGNAL / CALL_STATUS reçus sur `/user/queue/calls`
 - [ ] B3 : `price` présent dans RideDto
 - [ ] B4 : IMPLEMENTATION_SUMMARY.md à jour
+- [ ] B7 : `GET /api/v1/calls/support/admin-id` retourne l'UUID d'un admin disponible ; 503 + message si aucun
+- [ ] B8 : `POST /api/v1/auth/register` avec `phone` → 201 ; `phone` présent dans `UserResponse`
 - [ ] Aucun changement sur les contrats gelés (C1, C3, C4, C5, C6)
 - [ ] `mvn clean package` OK
+
+---
+
+## 🧩 Tâche B7 — Résolution de l'admin de support (contrat C10) ✅ IMPLÉMENTÉ (2026-10-04)
+
+**Problème** : le bouton « Support » de l'app Android appelait l'UUID codé en dur `00000000-0000-0000-0000-000000000000` — aucun appel ne pouvait aboutir. L'admin ne pouvait pas non plus initier d'appel.
+
+**Correctif** : nouvel endpoint dans `CallController` :
+
+```
+GET /api/v1/calls/support/admin-id        (JWT requis, aucun rôle particulier)
+Réponse 200 : ApiResponse<String> — data = UUID de l'admin de support à appeler
+Réponse 503 : ApiResponse<Void>  — aucun admin activé, ou tous actuellement en appel
+```
+
+- **Sélection** : tirage aléatoire équitable (`GetSupportAdminIdService`). Le point de sélection est isolé dans un use case hexagonal (`SupportAdminDirectory` port out) : c'est là que se branchera le futur **load balancer** — le contrat REST ne changera pas.
+- **Pool** : utilisateurs `enabled` portant un rôle dont le nom contient « admin » (`ROLE_ADMIN`, `SUPER_ADMIN`... — matching par inclusion, cohérent avec `UserRole.fromRoleNames` côté mobile), **moins** les participants d'un appel actif (`INITIATED, RINGING, ACCEPTED, IN_PROGRESS`).
+- **Sécurité** : le client n'apprend jamais la liste des admins — uniquement l'UUID de celui à appeler.
+- Fichiers : `call/application/port/in/GetSupportAdminIdUseCase.java`, `call/application/service/GetSupportAdminIdService.java`, `call/domain/port/out/SupportAdminDirectory.java`, `call/infrastructure/support/SupportAdminDirectoryAdapter.java`, `call/domain/exception/NoSupportAdminAvailableException.java` (→ 503 via `GlobalExceptionHandler`), `UserRepository.findEnabledIdsWithAdminRole()`, `CallRepository.findParticipantIdsByStatuses()`.
+
+**Critères d'acceptation** :
+1. `curl -s http://147.79.118.51:7820/api/v1/calls/support/admin-id -H "Authorization: Bearer $TOKEN"` → 200, `data` = UUID d'un admin activé.
+2. Admin en appel → il sort du tirage ; tous en appel → 503 avec message métier.
+3. Aucun admin en base → 503 avec message métier.
+
+---
+
+---
+
+## 🧩 Tâche B8 — Téléphone du client à l'inscription (contrat C11) ✅ IMPLÉMENTÉ (2026-10-04)
+
+**Problème** : le client était inscrit sans numéro de téléphone, alors que le module notification dispose de canaux SMS/WhatsApp qui ne pouvaient jamais être alimentés.
+
+**Correctif** (champ **optionnel à l'API**, mais **requis par le formulaire mobile**) :
+
+- `User` : nouvelle colonne `phone` (`VARCHAR(20)`, nullable — les anciens comptes et la création via `POST /api/v1/users` restent valides sans téléphone).
+- `CreateUserRequest` : nouveau champ `phone` validé par `@Pattern(regexp = "^$|^\+?[0-9]{8,15}$")` + `@Size(max = 20)` — « + » optionnel puis 8 à 15 chiffres, ou vide.
+- `UserResponse` : nouveau champ `phone` (MapStruct mappe automatiquement dans les deux sens).
+- `UserDetailsEventListener.mapToUserPayload` : le payload emporte désormais le vrai téléphone → canaux SMS/WhatsApp du module notification alimentés.
+
+**Base de données** : dev H2 `create-drop` → colonne créée automatiquement. Le `ALTER TABLE` éventuel en environnement docker/prod (`validate`) est volontairement **hors périmètre de ce repo**.
+
+**Critères d'acceptation** :
+1. `POST /api/v1/auth/register` avec `phone` valide → 201, `phone` visible dans la réponse.
+2. `phone` au format invalide → 400 « Format de téléphone invalide ».
+3. Inscription sans `phone` (champ absent du JSON) → 201 (rétrocompatibilité).
 
 ---
 

@@ -53,6 +53,13 @@ public class User implements UserDetails {
     @Column(name = "email", nullable = false, length = 150)
     private String email;
 
+    /**
+     * Numéro de téléphone (optionnel — renseigné à l'inscription mobile ;
+     * utilisé par le module notification pour les canaux SMS/WhatsApp).
+     */
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(name = "password", nullable = false)
     private String password;
 

@@ -9,6 +9,9 @@ import jakarta.validation.constraints.*;
  * @param lastname  Nom de famille.
  * @param username  Identifiant unique.
  * @param email     Adresse e-mail unique.
+ * @param phone     Numéro de téléphone (optionnel à l'API ; requis par le
+ *                  formulaire d'inscription mobile). Format : optionnellement
+ *                  préfixé par « + », 8 à 15 chiffres.
  * @param password  Mot de passe en clair (sera hashé).
  */
 public record CreateUserRequest(
@@ -20,6 +23,9 @@ public record CreateUserRequest(
         @NotBlank(message = "Le nom d'utilisateur est obligatoire") @Size(min = 3, max = 100) String username,
 
         @NotBlank(message = "L'email est obligatoire") @Email(message = "Format d'email invalide") @Size(max = 150) String email,
+
+        @Pattern(regexp = "^$|^\\+?[0-9]{8,15}$",
+                message = "Format de téléphone invalide (+ puis 8 à 15 chiffres)") @Size(max = 20) String phone,
 
         @NotBlank(message = "Le mot de passe est obligatoire") @Size(min = 8, message = "Le mot de passe doit contenir au moins 8 caractères") String password) {
 }
