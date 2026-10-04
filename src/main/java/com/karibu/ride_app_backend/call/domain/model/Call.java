@@ -95,6 +95,10 @@ public class Call {
                 .calleeId(calleeId)
                 .callType(callType)
                 .status(CallStatus.INITIATED)
+                // Renseigné dès la création pour que l'objet soit complet au moment
+                // du push WS (le @CreationTimestamp n'est appliqué qu'à l'INSERT,
+                // donc après l'envoi de l'événement INCOMING_CALL).
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 
