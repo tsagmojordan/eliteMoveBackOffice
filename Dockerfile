@@ -26,8 +26,11 @@ RUN java -Djarmode=tools -jar app.jar extract --layers --launcher --destination 
 FROM eclipse-temurin:23-jre-alpine
 WORKDIR /app
 
-# Utilisateur non-root : le backend écrit ses uploads dans {user.dir}/upload/picture/vehicule
-RUN addgroup -S spring && adduser -S spring -G spring \
+# Utilisateur non-root : le backend écrit ses uploads dans {user.dir}/upload/picture/vehicule.
+# UID/GID fixés à 1000 pour correspondre au propriétaire du volume ./upload monté
+# depuis l'hôte (docker-compose) — sinon AccessDeniedException sur les écritures/suppressions.
+# Sur le serveur, si ./upload appartient à root : sudo chown -R 1000:1000 upload (une fois).
+RUN addgroup -S -g 1000 spring && adduser -S -u 1000 -G spring \
     && mkdir -p upload/picture/vehicule/thumbnails \
     && chown -R spring:spring /app
 COPY --from=extractor /app/extracted/dependencies/ ./
