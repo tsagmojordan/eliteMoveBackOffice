@@ -30,7 +30,7 @@ WORKDIR /app
 # UID/GID fixés à 1000 pour correspondre au propriétaire du volume ./upload monté
 # depuis l'hôte (docker-compose) — sinon AccessDeniedException sur les écritures/suppressions.
 # Sur le serveur, si ./upload appartient à root : sudo chown -R 1000:1000 upload (une fois).
-RUN addgroup -S -g 1000 spring && adduser -S -u 1000 -G spring \
+RUN addgroup -S -g 1000 spring && adduser -S -u 1000 -G spring -H -D spring \
     && mkdir -p upload/picture/vehicule/thumbnails \
     && chown -R spring:spring /app
 COPY --from=extractor /app/extracted/dependencies/ ./
